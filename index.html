@@ -125,7 +125,8 @@
     async function loadDealers() {
       suggestions.innerHTML = `<span class="muted">Loading dealers…</span>`;
       try {
-        const res = await fetch(csvUrl, { cache: "no-store" });
+        const bust = (csvUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+        const res = await fetch(csvUrl + bust, { cache: "no-store" });
         if (!res.ok) throw new Error("Cannot fetch dealer CSV");
         const text = await res.text();
         const rows = parseCSV(text);
