@@ -30,8 +30,15 @@
     <!-- ====== CONFIG — EDIT THESE 3 LINES ====== -->
     <!-- (1) Google Sheet "Publish to web" CSV link -->
     <input type="hidden" id="CSV_URL" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vS3Hpp6N8pjYkRMy-Pi58yCxZB5o-rCdQfnBv0Z_vHMq6Uii5uxG60BnpQVcsyDTg-X9-A-HPodXhpT/pub?output=csv">
-    <!-- (2) Your Google Form URL (no params) -->
-    <input type="hidden" id="FORM_URL" value="https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog">
+    <!-- (2) Your Google Form URLs for each day -->
+    <input type="hidden" id="FORM_URLS" value='{
+        "monday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog",
+        "tuesday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog",
+        "wednesday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog",
+        "thursday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog",
+        "friday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog",
+        "saturday": "https://docs.google.com/forms/d/e/1FAIpQLSdJ8DpUs0LYGX1MX8lD5t3nNv05_r3_tnbGVXrztxhJhK1uRg/viewform?usp=dialog"
+    }'>
     <!-- (3) Allowed radius in meters -->
     <input type="hidden" id="RADIUS_M" value="50">
     <!-- ========================================= -->
@@ -82,12 +89,11 @@
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     function parseCSV(text) {
-      // Minimal CSV parser (assumes no quoted commas).
       return text.trim().split(/\r?\n/).map(line => line.split(","));
     }
 
     function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // Earth radius (m)
+      const R = 6371000; 
       const toRad = d => d * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
@@ -100,7 +106,7 @@
 
     // ------- State & DOM -------
     const csvUrl = document.getElementById("CSV_URL").value;
-    const formUrl = document.getElementById("FORM_URL").value;
+    const formUrls = JSON.parse(document.getElementById("FORM_URLS").value); // Parsing URLs for different days
     const RADIUS_M = parseInt(document.getElementById("RADIUS_M").value, 10);
 
     const dealerInput = document.getElementById("dealerInput");
@@ -115,7 +121,7 @@
     const radiusInfo = document.getElementById("radiusInfo");
     const accInfo = document.getElementById("accInfo");
 
-    let DEALERS = []; // {name, lat, lng}
+    let DEALERS = []; 
     let SELECTED = null;
     let MYLOC = null;
 
@@ -250,8 +256,17 @@
 
     goFormBtn.addEventListener("click", () => {
       if (goFormBtn.disabled) return;
-      // No prefill—just go to the form.
-      window.location.href = formUrl;
+      
+      // Get current day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+      const currentDay = new Date().getDay();
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      if (currentDay === 0) {
+        alert("Sales not working on Sunday.");
+        return;
+      }
+
+      // Redirect to the form based on the day
+      window.location.href = formUrls[days[currentDay]];
     });
   </script>
 </body>
