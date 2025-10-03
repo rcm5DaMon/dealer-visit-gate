@@ -27,21 +27,18 @@
     <h2>Dealer Visit — Location Check</h2>
     <p class="muted">Select the dealer, get your GPS position, and if you’re within the allowed radius, the Google Form button will unlock.</p>
 
-    <!-- ====== CONFIG — EDIT THESE 3 LINES ====== -->
+    <!-- ====== CONFIG (edit as needed) ====== -->
     <input type="hidden" id="CSV_URL" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vS3Hpp6N8pjYkRMy-Pi58yCxZB5o-rCdQfnBv0Z_vHMq6Uii5uxG60BnpQVcsyDTg-X9-A-HPodXhpT/pub?output=csv">
-
-    <input type="hidden" id="FORM_URLS" value='
-      {
-        "monday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
-        "tuesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
-        "wednesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
-        "thursday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
-        "friday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
-        "saturday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec"
-      }'>
-
-    <input type="hidden" id="RADIUS_M" value="50000000000000000000000000000000000000000000000000000000000000000000000000000">
-    <!-- ========================================= -->
+    <input type="hidden" id="FORM_URLS" value='{
+      "monday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+      "tuesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+      "wednesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+      "thursday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+      "friday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+      "saturday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec"
+    }'>
+    <input type="hidden" id="RADIUS_M" value="5000">
+    <!-- ====================================== -->
 
     <label for="dealerInput">Search dealer by name</label>
     <input id="dealerInput" type="text" placeholder="Type dealer name…" autocomplete="off">
@@ -74,37 +71,31 @@
       <button id="reload">Reload Dealer List</button>
       <button id="goForm" disabled>Go to Google Form</button>
     </div>
+
     <div style="margin-top:8px;">
       <span id="radiusInfo" class="badge"></span>
       <span id="accInfo" class="badge hidden"></span>
     </div>
 
-    <p class="muted" style="margin-top:12px;">
-      Tip: Allow location permission and use a phone outdoors for better accuracy.
-    </p>
+    <p class="muted" style="margin-top:12px;">Tip: Allow location permission and use a phone outdoors for better accuracy.</p>
   </div>
 
   <script>
+    // ===== Utilities =====
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    function parseCSV(text) {
-      return text.trim().split(/\r?\n/).map(line => line.split(","));
-    }
-
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000; 
-      const toRad = d => d * Math.PI / 180;
+    const parseCSV = (text) => text.trim().split(/\r?\n/).map(line => line.split(","));
+    const toRad = (d) => d * Math.PI / 180;
+    const haversineMeters = (lat1, lon1, lat2, lon2) => {
+      const R = 6371000;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    };
 
+    // ===== State =====
     const csvUrl = document.getElementById("CSV_URL").value;
-    const formUrls = JSON.parse(document.getElementById("FORM_URLS").value); 
+    const formUrls = JSON.parse(document.getElementById("FORM_URLS").value);
     const RADIUS_M = parseInt(document.getElementById("RADIUS_M").value, 10);
 
     const dealerInput = document.getElementById("dealerInput");
@@ -119,27 +110,31 @@
     const radiusInfo = document.getElementById("radiusInfo");
     const accInfo = document.getElementById("accInfo");
 
-    let DEALERS = []; 
+    let DEALERS = [];
     let SELECTED = null;
     let MYLOC = null;
 
     radiusInfo.textContent = `Allowed radius: ${RADIUS_M} m`;
 
+    // ===== Load Dealers =====
     async function loadDealers() {
       suggestions.innerHTML = `<span class="muted">Loading dealers…</span>`;
       try {
         const bust = (csvUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
         const res = await fetch(csvUrl + bust, { cache: "no-store" });
         if (!res.ok) throw new Error("Cannot fetch dealer CSV");
+
         const text = await res.text();
         const rows = parseCSV(text);
         const header = rows.shift().map(h => h.trim().toLowerCase());
         const iName = header.indexOf("dealername");
         const iLat = header.indexOf("latitude");
         const iLng = header.indexOf("longitude");
+
         if (iName < 0 || iLat < 0 || iLng < 0) {
           throw new Error("CSV header must include DealerName, Latitude, Longitude");
         }
+
         DEALERS = rows.map(r => ({
           name: (r[iName] || "").trim(),
           lat: parseFloat(r[iLat]),
@@ -154,6 +149,7 @@
     loadDealers();
     reloadBtn.addEventListener("click", loadDealers);
 
+    // ===== Autocomplete =====
     let lastQuery = "";
     dealerInput.addEventListener("input", async (e) => {
       const q = e.target.value.trim().toLowerCase();
@@ -171,6 +167,7 @@
       if (q !== lastQuery) return;
 
       const list = DEALERS.filter(d => d.name.toLowerCase().includes(q)).slice(0, 8);
+
       if (list.length === 1 && list[0].name.toLowerCase() === q) {
         setSelected(list[0]);
         suggestions.innerHTML = "";
@@ -185,6 +182,7 @@
       suggestions.innerHTML = list.map(d =>
         `<span class="pill" data-name="${encodeURIComponent(d.name)}">${d.name}</span>`
       ).join("");
+
       suggestions.querySelectorAll("[data-name]").forEach(el => {
         el.addEventListener("click", () => {
           const name = decodeURIComponent(el.getAttribute("data-name"));
@@ -204,6 +202,7 @@
       computeDistance();
     }
 
+    // ===== Geolocation =====
     getGPSBtn.addEventListener("click", () => {
       if (!navigator.geolocation) {
         statusEl.value = "Geolocation not supported";
@@ -211,9 +210,14 @@
         return;
       }
       statusEl.value = "Requesting location…";
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          MYLOC = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+          MYLOC = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            acc: pos.coords.accuracy
+          };
           myCoords.value = `${MYLOC.lat.toFixed(6)}, ${MYLOC.lng.toFixed(6)} (±${Math.round(MYLOC.acc)} m)`;
           accInfo.textContent = `Accuracy: ±${Math.round(MYLOC.acc)} m`;
           accInfo.classList.remove("hidden");
@@ -227,30 +231,47 @@
       );
     });
 
+    // ===== Gate Logic =====
     function computeDistance() {
-      if (!SELECTED || !MYLOC) { updateGate(); return; }
+      if (!SELECTED || !MYLOC) {
+        updateGate();
+        return;
+      }
       const dist = Math.round(haversineMeters(MYLOC.lat, MYLOC.lng, SELECTED.lat, SELECTED.lng));
       distanceEl.value = dist;
+
       const ok = dist <= RADIUS_M;
       statusEl.value = ok ? "WITHIN RADIUS" : "OUT OF RADIUS";
       statusEl.className = ok ? "ok" : "warn";
       goFormBtn.disabled = !ok;
-
-      if (ok) {
-        localStorage.setItem('locationChecked', 'true');
-      }
     }
 
     function updateGate() {
-      const needDealer = !SELECTED;
-      const needGPS = !MYLOC;
-      if (needDealer && needGPS) { statusEl.value = "Select dealer & get GPS"; }
-      else if (needDealer)       { statusEl.value = "Select dealer"; }
-      else if (needGPS)          { statusEl.value = "Get GPS"; }
+      if (!SELECTED && !MYLOC) {
+        statusEl.value = "Select dealer & get GPS";
+      } else if (!SELECTED) {
+        statusEl.value = "Select dealer";
+      } else if (!MYLOC) {
+        statusEl.value = "Get GPS";
+      }
       statusEl.className = "";
       goFormBtn.disabled = true;
       distanceEl.value = "";
     }
+
+    // ===== Form Redirect =====
+    goFormBtn.addEventListener("click", () => {
+      if (goFormBtn.disabled) return;
+
+      const currentDay = new Date().getDay(); // 0=Sunday
+      const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+      if (currentDay === 0) {
+        alert("Sales not working on Sunday.");
+        return;
+      }
+      window.location.href = formUrls[days[currentDay]];
+    });
   </script>
 </body>
 </html>
