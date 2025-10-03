@@ -28,18 +28,18 @@
     <p class="muted">Select the dealer, get your GPS position, and if you’re within the allowed radius, the Google Form button will unlock.</p>
 
     <!-- ====== CONFIG — EDIT THESE 3 LINES ====== -->
-    <!-- (1) Google Sheet "Publish to web" CSV link -->
     <input type="hidden" id="CSV_URL" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vS3Hpp6N8pjYkRMy-Pi58yCxZB5o-rCdQfnBv0Z_vHMq6Uii5uxG60BnpQVcsyDTg-X9-A-HPodXhpT/pub?output=csv">
-    <!-- (2) Your Google Form URLs for each day -->
-    <input type="hidden" id="FORM_URLS" value='{
-        "monday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
-        "tuesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
-        "wednesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
-        "thursday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
-        "friday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec",
+
+    <input type="hidden" id="FORM_URLS" value='
+      {
+        "monday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
+        "tuesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
+        "wednesday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
+        "thursday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
+        "friday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec", 
         "saturday": "https://script.google.com/a/*/macros/s/AKfycby4T1JrPE1DEKHk9RildtjtFuL4AuKCnJRFlR9lAXq8tBEi1VbZPtQwiP2rrxtW7UFFvg/exec"
-    }'>
-    <!-- (3) Allowed radius in meters -->
+      }'>
+
     <input type="hidden" id="RADIUS_M" value="50000000000000000000000000000000000000000000000000000000000000000000000000000">
     <!-- ========================================= -->
 
@@ -85,7 +85,6 @@
   </div>
 
   <script>
-    // ------- Utilities -------
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     function parseCSV(text) {
@@ -104,9 +103,8 @@
       return R * c;
     }
 
-    // ------- State & DOM -------
     const csvUrl = document.getElementById("CSV_URL").value;
-    const formUrls = JSON.parse(document.getElementById("FORM_URLS").value); // Parsing URLs for different days
+    const formUrls = JSON.parse(document.getElementById("FORM_URLS").value); 
     const RADIUS_M = parseInt(document.getElementById("RADIUS_M").value, 10);
 
     const dealerInput = document.getElementById("dealerInput");
@@ -127,7 +125,6 @@
 
     radiusInfo.textContent = `Allowed radius: ${RADIUS_M} m`;
 
-    // ------- Load dealers from CSV -------
     async function loadDealers() {
       suggestions.innerHTML = `<span class="muted">Loading dealers…</span>`;
       try {
@@ -157,7 +154,6 @@
     loadDealers();
     reloadBtn.addEventListener("click", loadDealers);
 
-    // ------- Autocomplete -------
     let lastQuery = "";
     dealerInput.addEventListener("input", async (e) => {
       const q = e.target.value.trim().toLowerCase();
@@ -208,7 +204,6 @@
       computeDistance();
     }
 
-    // ------- Geolocation -------
     getGPSBtn.addEventListener("click", () => {
       if (!navigator.geolocation) {
         statusEl.value = "Geolocation not supported";
@@ -232,7 +227,6 @@
       );
     });
 
-    // ------- Gate logic -------
     function computeDistance() {
       if (!SELECTED || !MYLOC) { updateGate(); return; }
       const dist = Math.round(haversineMeters(MYLOC.lat, MYLOC.lng, SELECTED.lat, SELECTED.lng));
@@ -241,6 +235,10 @@
       statusEl.value = ok ? "WITHIN RADIUS" : "OUT OF RADIUS";
       statusEl.className = ok ? "ok" : "warn";
       goFormBtn.disabled = !ok;
+
+      if (ok) {
+        localStorage.setItem('locationChecked', 'true');
+      }
     }
 
     function updateGate() {
@@ -253,21 +251,6 @@
       goFormBtn.disabled = true;
       distanceEl.value = "";
     }
-
-    goFormBtn.addEventListener("click", () => {
-      if (goFormBtn.disabled) return;
-      
-      // Get current day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-      const currentDay = new Date().getDay();
-      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      if (currentDay === 0) {
-        alert("Sales not working on Sunday.");
-        return;
-      }
-
-      // Redirect to the form based on the day
-      window.location.href = formUrls[days[currentDay]];
-    });
   </script>
 </body>
 </html>
